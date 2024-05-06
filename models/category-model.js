@@ -8,7 +8,7 @@ const CategorySchema = new mongoose.Schema({
             ref: 'Subcategory'
         }
     ]
-})
+}, {timestamps: true})
 
 const Category = mongoose.model('Category', CategorySchema)
 

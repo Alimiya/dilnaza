@@ -13,6 +13,16 @@ app.use(bodyParser.urlencoded({extended: true}))
 app.use(bodyParser.json())
 app.use(cookieParser())
 
+const admin = require('./routes/admin-route')
+const auth = require('./routes/auth-route')
+const product = require('./routes/product-route')
+const user = require('./routes/user-route')
+
+app.use('/admin', admin)
+app.use('/auth', auth)
+app.use('/product', product)
+app.use('/user', user)
+
 const {DB} = require('./db')
 
 DB()
