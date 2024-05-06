@@ -92,7 +92,7 @@ class AdminController {
         }
     }
 
-    async updateProduct(req, res) {
+    async editProduct(req, res) {
         const productId = req.params.id
         const {title, description, category, subcategory, price, quantity} = req.body
         try {
