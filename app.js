@@ -2,7 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const cookieParser = require('cookie-parser')
 require("dotenv").config({path: ".env"})
-
+const fileUpload = require('express-fileupload')
 const app = express()
 
 app.set('view engine', 'ejs')
@@ -23,7 +23,7 @@ app.use('/auth', auth)
 app.use('/product', product)
 app.use('/user', user)
 
-const {DB} = require('./db')
+const DB = require('./db')
 
 DB()
     .then(() => {

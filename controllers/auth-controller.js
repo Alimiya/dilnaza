@@ -1,5 +1,6 @@
 const UserModel = require('../models/user-model')
 const {generateAdminToken, generateUserToken} = require('../middlewares/jwt')
+const bcrypt = require('bcrypt')
 
 class AuthController {
     async register(req, res) {

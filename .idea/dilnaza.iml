@@ -10,5 +10,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="agriculture-diploma" />
     <orderEntry type="module" module-name="backend-gts" />
+    <orderEntry type="module" module-name="engschool" />
   </component>
 </module>

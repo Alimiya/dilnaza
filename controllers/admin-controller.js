@@ -3,6 +3,9 @@ const CategoryModel = require('../models/category-model')
 const SubcategoryModel = require('../models/subcategory-model')
 const ProductModel = require('../models/product-model')
 const HistoryModel = require('../models/history-model')
+const fs = require('fs')
+const util = require('util')
+const mkdir = util.promisify(fs.mkdir)
 
 class AdminController {
     async getUsers(req, res) {
@@ -67,7 +70,7 @@ class AdminController {
         try {
             if (!files || files.length === 0) return res.status(404).json({message: 'No files'})
 
-            const product = new ProductModel.create({
+            const product = new ProductModel({
                 title,
                 description,
                 price,
@@ -76,18 +79,49 @@ class AdminController {
                 subcategory
             })
 
+            const dirPath = `public/uploads/products/${product._id}`
+            if (!fs.existsSync(dirPath)) {
+                await mkdir(dirPath, {recursive: true})
+            }
+
             const fileNames = []
             await Promise.all(files.map(async (file, index) => {
                 const fileName = `${product._id}-${index + 1}${file.originalname.slice(file.originalname.lastIndexOf('.'))}`
-                fileNames.push(fileName)
-                await file.mv(`public/uploads/products/${product._id}/${fileName}`)
+                const filePath = `public/uploads/products/${product._id}/${fileName}`
+                fileNames.push(filePath)
+                const fileContent = await new Promise((resolve, reject) => {
+                    fs.readFile(file.path, (err, data) => {
+                        if (err) reject(err)
+                        else resolve(data)
+                    })
+                })
+                await new Promise((resolve, reject) => {
+                    fs.writeFile(`${dirPath}/${fileName}`, fileContent, (err) => {
+                        if (err) {
+                            reject(err)
+                        } else {
+                            resolve()
+                        }
+                    })
+                })
             }))
 
-            product.files = fileNames
+            await Promise.all(files.map(async (file) => {
+                await fs.promises.unlink(file.path)
+            }))
+
+            product.file = fileNames
             await product.save()
 
-            res.status(201).json(product, {message: 'Product created successfully'})
+            res.status(201).json({product, message: 'Product created successfully'})
         } catch (err) {
+            console.log(err)
+            console.log(err.message)
+            if (files && files.length > 0) {
+                await Promise.all(files.map(async (file) => {
+                    await fs.promises.unlink(file.path)
+                }))
+            }
             res.status(500).json({message: "Internal server error"})
         }
     }
@@ -108,7 +142,7 @@ class AdminController {
                 },
                 {new: true})
 
-            res.status(200).json(product, {message: "Product edited successfully"})
+            res.status(200).json({product, message: "Product edited successfully"})
         } catch (err) {
             res.status(500).json({message: "Internal server error"})
         }
@@ -120,7 +154,7 @@ class AdminController {
             const product = await ProductModel.findByIdAndDelete(productId)
             if (!product) return res.status(404).json({message: "Product not found"})
 
-            res.status(200).json(product, {message: "Product deleted successfully"})
+            res.status(200).json({product, message: "Product deleted successfully"})
         } catch (err) {
             res.status(500).json({message: "Internal server error"})
         }
@@ -129,9 +163,10 @@ class AdminController {
     async createCategory(req, res) {
         const {name} = req.body
         try {
-            const category = await CategoryModel.create(name)
-            res.status(201).json(category, {message: 'Category created successfully'})
+            const category = await CategoryModel.create({name})
+            res.status(201).json({category, message: 'Category created successfully'})
         } catch (err) {
+            console.log(err.message)
             res.status(500).json({message: "Internal server error"})
         }
     }
@@ -146,7 +181,7 @@ class AdminController {
             category.name = name
             await category.save()
 
-            res.status(200).json(category, {message: "Category edited successfully"})
+            res.status(200).json({category, message: "Category edited successfully"})
         } catch (err) {
             res.status(500).json({message: "Internal server error"})
         }
@@ -158,10 +193,11 @@ class AdminController {
             const category = await CategoryModel.findById(categoryId)
             if (!category) return res.status(404).json({message: "Category not found"})
 
-            await category.remove()
+            await CategoryModel.deleteOne({ _id: categoryId })
 
-            res.status(200).json(category, {message: "Category deleted successfully"})
+            res.status(200).json({category, message: "Category deleted successfully"})
         } catch (err) {
+            console.log(err.message)
             res.status(500).json({message: "Internal server error"})
         }
     }
@@ -176,7 +212,7 @@ class AdminController {
             category.subcategories.push(subcategory._id)
             await category.save()
 
-            res.status(201).json(subcategory, {message: "Subcategory created successfully"})
+            res.status(201).json({subcategory, message: "Subcategory created successfully"})
         } catch (err) {
             res.status(500).json({message: "Internal server error"})
         }
@@ -192,7 +228,7 @@ class AdminController {
             subcategory.name = name
             await subcategory.save()
 
-            res.status(200).json(subcategory, {message: "Subcategory edited successfully"})
+            res.status(200).json({subcategory, message: "Subcategory edited successfully"})
         } catch (err) {
             res.status(500).json({message: "Internal server error"})
         }
@@ -210,9 +246,9 @@ class AdminController {
                 await category.updateOne({$pull: {subcategories: subcategoryId}})
             }))
 
-            await subcategory.remove()
+            await SubcategoryModel.deleteOne({ _id: subcategoryId })
 
-            res.status(200).json(subcategory, {message: "Subcategory deleted successfully"})
+            res.status(200).json({subcategory, message: "Subcategory deleted successfully"})
         } catch (err) {
             res.status(500).json({message: "Internal server error"})
         }
